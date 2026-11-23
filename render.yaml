@@ -1,0 +1,18 @@
+# Render Infrastructure Blueprint
+# AI-Based Real-Time Deepfake Detection & Digital Media Verification System
+services:
+  - type: web
+    name: deepshield-forensics-app
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn -k uvicorn.workers.UvicornWorker -w 1 -b 0.0.0.0:$PORT app:app"
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.2
+      - key: NODE_VERSION
+        value: 18.20.0
+      - key: TF_ENABLE_ONEDNN_OPTS
+        value: "0"

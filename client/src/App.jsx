@@ -1,215 +1,170 @@
-import { useState } from "react"
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import React, { useState, useEffect } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-
-import { BsUpload } from "react-icons/bs";
-import { CiImageOn } from "react-icons/ci";
-import { CiVideoOn } from "react-icons/ci";
-import {DNA} from 'react-loader-spinner';
-
-import useHover from "./hooks/useHover";
-
+import Navbar from "./components/Navbar";
+import ImageForensics from "./components/ImageForensics";
+import VideoForensics from "./components/VideoForensics";
+import RealtimeScanner from "./components/RealtimeScanner";
+import AudioForensics from "./components/AudioForensics";
+import AuditHistory from "./components/AuditHistory";
+import Benchmarks from "./components/Benchmarks";
+import TechSpecs from "./components/TechSpecs";
+import CertificateModal from "./components/CertificateModal";
 
 const App = () => {
+  const BASEURL = import.meta.env.VITE_API_URL || (typeof window !== "undefined" && window.location.port === "5173" ? "http://localhost:8000" : "");
 
-	const BASEURL = 'http://localhost:8000'
+  const [activeTab, setActiveTab] = useState("image");
+  const [apiOnline, setApiOnline] = useState(false);
+  const [activeReport, setActiveReport] = useState(null);
 
-	const [videoUrl,setVideoUrl] = useState('')
-	const [imageUrl,setImageUrl] = useState('')
-	const [selectedFile,setSelectedFile] = useState(null)
-	const [result,setResult] = useState('')
+  // Load audit history from LocalStorage
+  const [auditHistory, setAuditHistory] = useState(() => {
+    try {
+      const saved = localStorage.getItem("deepshield_audit_history");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
-	const [loading,setLoading] = useState(false)
-	// const [error,setError] = useState(false)
+  // Verify backend health on mount
+  useEffect(() => {
+    const checkApiHealth = async () => {
+      try {
+        const res = await fetch(`${BASEURL}/`);
+        if (res.ok) {
+          setApiOnline(true);
+        } else {
+          setApiOnline(false);
+        }
+      } catch {
+        setApiOnline(false);
+      }
+    };
 
-	const [isHover,hoverRef] = useHover();
-	const [isHover2,hoverRef2] = useHover();
+    checkApiHealth();
+    const interval = setInterval(checkApiHealth, 15000);
+    return () => clearInterval(interval);
+  }, [BASEURL]);
 
+  // Persist audit history
+  const handleSaveAudit = (entry) => {
+    setAuditHistory((prev) => {
+      const updated = [entry, ...prev.slice(0, 49)];
+      try {
+        localStorage.setItem("deepshield_audit_history", JSON.stringify(updated));
+      } catch {
+        // Ignored
+      }
+      return updated;
+    });
+  };
 
-	const handleVideoUpload = (e)=>{
-		const file = e.target.files[0]
-		setSelectedFile(file)
+  const handleClearHistory = () => {
+    setAuditHistory([]);
+    try {
+      localStorage.removeItem("deepshield_audit_history");
+    } catch {
+      // Ignored
+    }
+    toast.info("Audit log cleared.");
+  };
 
-    	const reader = new FileReader()
-		reader.onloadend = () => {
-			setVideoUrl(reader.result)
-		}
+  const handleGenerateReport = async (payload) => {
+    try {
+      const res = await fetch(`${BASEURL}/generateReport`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-		reader.readAsDataURL(file)
-	}
-	
-	const handleImageUpload = (e)=>{
-		const file = e.target.files[0]
-		setSelectedFile(file)
+      if (!res.ok) {
+        throw new Error("Unable to generate verification certificate.");
+      }
 
-    	const reader = new FileReader()
-		reader.onloadend = () => {
-			setImageUrl(reader.result)
-		}
+      const reportData = await res.json();
+      setActiveReport(reportData);
+    } catch (err) {
+      toast.error(err.message || "Failed to generate report.");
+    }
+  };
 
-		reader.readAsDataURL(file)
-	}
+  const handleViewCertificate = (reportData) => {
+    handleGenerateReport(reportData);
+  };
 
-	const predictVideo = async () => {
-		try {
-			setLoading(true)
+  return (
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* Top Navbar */}
+      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} apiOnline={apiOnline} />
 
-			const formData = new FormData()
-			formData.append('video', selectedFile)
+      {/* Main Content Area */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {activeTab === "image" && (
+          <ImageForensics
+            onGenerateReport={handleGenerateReport}
+            onSaveAudit={handleSaveAudit}
+            BASEURL={BASEURL}
+          />
+        )}
+        {activeTab === "video" && (
+          <VideoForensics
+            onGenerateReport={handleGenerateReport}
+            onSaveAudit={handleSaveAudit}
+            BASEURL={BASEURL}
+          />
+        )}
+        {activeTab === "realtime" && <RealtimeScanner BASEURL={BASEURL} />}
+        {activeTab === "audio" && (
+          <AudioForensics
+            onGenerateReport={handleGenerateReport}
+            onSaveAudit={handleSaveAudit}
+            BASEURL={BASEURL}
+          />
+        )}
+        {activeTab === "history" && (
+          <AuditHistory
+            onViewCertificate={handleViewCertificate}
+            BASEURL={BASEURL}
+          />
+        )}
+        {activeTab === "benchmarks" && <Benchmarks BASEURL={BASEURL} />}
+        {activeTab === "specs" && <TechSpecs />}
+      </main>
 
-			const postHeader = {
-				method:"POST",
-				body:formData
-			}
+      {/* Verification Certificate Modal */}
+      {activeReport && (
+        <CertificateModal report={activeReport} onClose={() => setActiveReport(null)} />
+      )}
 
-			const res = await fetch(`${BASEURL}/predictVideo`,postHeader)
-			const data = await res.json()
-			if (!res.ok) {
-				throw new Error(data.detail || "Unable to analyze video")
-			}
-			setResult(data)
-			setLoading(false)
+      {/* Footer */}
+      <footer className="w-full border-t border-slate-900 bg-slate-950/80 py-6 text-center text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div>
+            &copy; {new Date().getFullYear()} DeepShield AI Forensics Studio &bull; Real-Time Deepfake Detection & Digital Media Verification System
+          </div>
+          <div className="text-[11px] text-amber-500/80">
+            Disclaimer: Detection results are probabilistic predictions and are not legal, forensic, or evidential proof.
+          </div>
+        </div>
+      </footer>
 
-			toast.success("Video analyzed successfully")
-
-		} catch (error) {
-			toast.error(error.message || "API Error!")
-			setLoading(false)
-			console.log(error)
-		}
-	}
-
-	const predictImage = async () => {
-		try {
-			setLoading(true)
-
-			const formData = new FormData()
-			formData.append('image', selectedFile)
-
-			const postHeader = {
-				method:"POST",
-				body:formData
-			}
-
-			const res = await fetch(`${BASEURL}/predictImage`,postHeader)
-			const data = await res.json()
-
-			if (!res.ok) {
-				throw new Error(data.detail || "Unable to analyze image")
-			}
-
-			setResult(data)
-			setLoading(false)
-			toast.success("Image analyzed successfully")
-
-		} catch (error) {
-			toast.error(error.message || "API Error!")
-			setLoading(false)
-			console.log(error)
-		}
-	}
-
-	const reset = ()=>{
-		setVideoUrl('')
-		setImageUrl('')
-		setSelectedFile(null)
-		setResult('')
-	}
-
-	return (
-		<div>
-			{!loading ? 
-			<div className="min-h-screen min-w-full flex flex-col gap-3 items-center justify-center p-4 bg-[#EBEEF5]">
-
-				<div className="text-2xl sm:text-4xl text-center absolute top-10 inset-x-0">Deepfake Detection</div>
-
-				{!videoUrl && !imageUrl ? <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-					<div className="size-52">
-						<label ref={hoverRef} className="flex flex-col-reverse items-center justify-center gap-3 size-52 rounded-xl p-3 border-2 border-black/70 border-dashed cursor-pointer hover:scale-105 duration-150">
-							<div className="text-center text-3xl">Upload Video</div>
-							<div>
-								{!isHover ? <CiVideoOn size={70}/> : <BsUpload size={70}/>}
-							</div>
-							<input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden"/>
-						</label>
-					</div>
-
-					<div className="size-52">
-						<label ref={hoverRef2} className="flex flex-col-reverse items-center justify-center gap-3 size-52 rounded-xl p-3 border-2 border-black/70 border-dashed cursor-pointer hover:scale-105 duration-150">
-							<div className="text-center text-3xl">Upload Image</div>
-							<div>
-								{!isHover2 ? <CiImageOn size={70}/> : <BsUpload size={70}/>}
-								{/* <MdOutlineCloudUpload size={70}/> */}
-							</div>
-							<input type="file" accept="image/*" onChange={handleImageUpload} className="hidden"/>
-						</label>
-					</div>
-				</div> : 
-				<div className="hidden">
-					<div ref={hoverRef}/>
-					<div ref={hoverRef2}/>
-				</div>}
-
-				{videoUrl && (
-					<div className="w-11/12 sm:w-5/6 md:w-4/5 lg:w-3/5 xl:w-1/2 mt-32 flex items-center justify-center">
-						<video controls className="rounded-2xl">label
-							<source src={videoUrl} type="video/mp4" />
-							Your browser does not support the video tag.
-						</video>
-					</div>
-				)}
-
-				{imageUrl && (
-					<div className="w-11/12 sm:w-5/6 md:w-4/5 lg:w-3/5 xl:w-1/2 mt-32 flex items-center justify-center">
-						<img src={imageUrl} alt="" className="rounded-2xl"/>
-					</div>
-				)}
-
-				{result && imageUrl && (
-					<div className="w-11/12 sm:w-5/6 md:w-4/5 lg:w-3/5 xl:w-1/2 rounded-2xl border border-slate-300 bg-white p-5 text-center shadow-sm">
-						<div className="text-xl sm:text-2xl flex flex-wrap items-center justify-center gap-2">
-							Prediction Result:
-							<span className={`font-bold ${result.result === 1 ? "text-red-600" : result.result === 0 ? "text-green-600" : "text-neutral-600"}`}>
-								{result.label}
-							</span>
-							{result.result !== -1 && <span className="text-base text-slate-600">({result.confidence_percent}% confidence)</span>}
-						</div>
-						{result.result !== -1 && (
-							<div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
-								<div
-									className={`h-full ${result.result === 1 ? "bg-red-500" : "bg-green-500"}`}
-									style={{ width: `${result.confidence_percent}%` }}
-								/>
-							</div>
-						)}
-						<p className="mt-4 text-sm text-amber-800">Probabilistic result only; not legal proof.</p>
-					</div>
-				)}
-
-				<div className="flex items-center justify-center gap-2">
-					{videoUrl || imageUrl ? <button onClick={reset} className="rounded-xl p-3 border-2 border-black/70 border-dashed hover:scale-105 duration-150">Try another</button> : null}
-
-					{videoUrl && !result ? <button onClick={predictVideo} className="rounded-xl p-3 border-2 border-black/70 border-dashed hover:scale-105 duration-150">Predict Video!</button> : null}
-
-					{imageUrl && !result ? <button onClick={predictImage} className="rounded-xl p-3 border-2 border-black/70 border-dashed hover:scale-105 duration-150">Predict image!</button> : null}
-				</div>
-
-			</div> : 
-			<div className="min-h-screen min-w-full flex flex-col items-center justify-center bg-[#EBEEF5]">
-				<DNA
-					visible={true}
-					height="200"
-					width="200"
-					ariaLabel="dna-loading"
-					wrapperStyle={{}}
-					wrapperClass="dna-wrapper"
-				/>
-				<h1>Be patient, It may take a while...</h1>
-			</div>}
-			<ToastContainer/>
-		</div>
-	)
-}
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3500}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
+    </div>
+  );
+};
 
 export default App;

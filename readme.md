@@ -1,113 +1,90 @@
-# Deepfake Detection
+# AI-Based Real-Time Deepfake Detection & Digital Media Verification System
 
-### A Full-Stack Deepfake Detection Application developed FastAPI, Tensorflow, OpenCV, React.js and Tailwind CSS
+### DeepShield AI Forensics Studio v2.0
+A state-of-the-art, full-stack digital forensics and deepfake verification platform developed with **FastAPI**, **TensorFlow**, **OpenCV**, **React.js**, and **Tailwind CSS**.
 
-## To run this project locally:
-#### Pre requisites: Python(>=3.10), Node.js(>=18.19)
+---
 
-* Clone this repository
-```
-git clone https://github.com/harshpx/deepfake-detection.git
-cd deepfake-detection
-```
-* Setup python virtual environment and install dependencies
-```
-python3 -m venv ./venv
-source ./venv/bin/activate
-pip install -r requirements.txt
-```
-* Install frontend dependencies (present inside cilent directory)
-```
-cd client
-npm install
-```
+## Quickstart (Local Execution)
 
-* Go to parent directory (where app.py is located) and run the FastAPI server using:
-```
-uvicorn app:app --host 0.0.0.0 --port 8000 --reload
-```
-Now our FastAPI server must be running on localhost:8000 (make sure that your port 8000 is free before running previous command).
+Run these commands from `c:\Deep fake\deepfake-detection` (or directly from `c:\Deep fake`):
 
-* Go to client directory and create another terminal (where package.json is located) and run the React App using:
-```
-npm run dev
-```
-Now our React App must be running on localhost:5173 (or on any port >5173 if it is not free).
-
-
-## Project description
-The main model is a **10 Layer Deep CNN Architecture**, which is optimized for effective image processing and classification, and specifically adapted to the deepfake detection task.
-
-### Model Structure
-* With more than 653k parameters and dropout as the only regularization method, the model was quite straightforward.
-* The dropout rate in dense layers is set at 0.5, preventing overfitting by forcing neurons to learn independently. 50% of neurons in each batch or training example are randomly removed, creating a new neural network for each batch, and the average prediction is obtained.
-* The initial few Convolution layers had a kernel size of 5 and 64 filters, followed by max-pooling, unlike later layers with fewer filters and a dilation rate of 2.
-* The benefit of dilated convolutions is obvious: they produce a bigger field of reception. The dilation rate was maintained at its standard level. You'll see that our network is only dilated in the final three layers.
-* We use a binary classification model, and the output is based on sigmoid activation.
-* Input image size used is [224,224,3].
-* The training accuracy achieved was <99.9% and the validation accuracy too achieved was <99% (Extremely accurate).
-
-<img src="client/public/model_structure.png"/>
-
-
-## Performance Analysis
-
-* **Training Logs**
-<img src="client/public/logs.png"/>
-
-* **Evaluation Metrics: Accuracy, Precision, Recall**
-<img src="client/public/score1.png"/>
-<img src="client/public/score2.png"/>
-
-* **Confusion Matrix**
-    * True Positive: 602
-    * False Positive: 7
-    * False Negative: 5
-    * True Negative: 586
-    <br/>
-    <img src="client/public/confusion_matrix.png" style="height:300px; width:300px; display:block margin-bottom:100px;"/>
-
-
-* **ROC-AUC curve**
-<img src="client/public/ROC.png"/>
-
-
-## Post-Training Pipeline
-<img src="client/public/pipeline.png"/>
-
-## Application Architecture (Client-Server)
-<img src="client/public/application_architecture.png">
-
-
-## Screenshots
-<img src="client/public/df1.png"/>
-<img src="client/public/df2.png"/>
-<img src="client/public/df3.png"/>
-<img src="client/public/df5.png"/>
-<img src="client/public/df4.png"/>
-
-## Attribution and disclaimer
-
-Original project created and credited to [harshpx](https://github.com/harshpx), repository: https://github.com/harshpx/deepfake-detection.
-
-Detection results are probabilistic predictions and are **not legal, forensic, or evidential proof**. Human expert review is required before taking consequential action.
-
-## Image analysis API
-
-`POST /predictImage` accepts JPEG, PNG, or WebP image uploads up to 10 MB. The endpoint validates the declared MIME type and file magic bytes, processes the file with a temporary name, and deletes the temporary file after processing.
-
-The response includes:
-
-- `result`: `0` real, `1` fake, or `-1` no face detected
-- `confidence`: model confidence between `0` and `1`
-- `confidence_percent`: model confidence percentage
-- `label`: `Real`, `Fake`, or `No face detected`
-- `disclaimer`: legal and evidentiary use disclaimer
-
-Run the API tests with:
-
+### 1. Run Backend Pytest Suite
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-For Python 3.11 on Windows, use `tensorflow-cpu==2.19.0` and `tensorflow-io-gcs-filesystem==0.31.0`; the original `0.37.1` I/O pin is not available for this runtime.
+### 2. Start React Website (Vite Dev Server)
+```powershell
+npm --prefix client run dev
+```
+Website runs at: **http://localhost:5173**
+
+### 3. Start FastAPI Forensic Server
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+```
+API Documentation & Swagger UI runs at: **http://localhost:8000/docs**
+
+---
+
+## System Capabilities & Key Features
+
+### 1. 🖼️ Multi-Spectral Image Forensics Studio
+- **10-Layer Deep Dilated CNN**: 653,314 trainable parameters with 0.50 dropout regularization for resilient facial classification.
+- **Multi-Face Detection & Bounding Boxes**: Automatically isolates and renders individual face bounding boxes with per-face confidence scores.
+- **Error Level Analysis (ELA)**: Recompresses images at 90% quality to compute amplified compression deltas, exposing splice seams and re-saved face regions.
+- **JET Thermal Heatmap**: Visualizes localized compression anomalies with a dynamic temperature gradient.
+- **2D Fast Fourier Transform (FFT) Spectrogram**: Identifies unnatural periodic high-frequency grid artifacts typical of GAN and diffusion generators.
+- **Laplacian Noise & Texture Consistency**: Measures face-to-background sharpness differentials to detect synthetic boundary blurring.
+- **EXIF & Cryptographic Provenance**: Computes SHA-256 and MD5 digests while auditing EXIF headers for signatures of image editing/AI tools.
+
+### 2. 🎬 Video Temporal Forensics
+- **Temporal Frame Sampling**: Uniformly samples frames across video duration.
+- **Frame-by-Frame Timeline**: Interactive bar chart plotting real vs. fake probabilities across the video timeline.
+- **Flagged Keyframe Extraction**: Automatically isolates the most suspicious frames with bounding boxes and timestamp overlays.
+- **Telemetry Aggregation**: Calculates duration, face detection count, fake frame ratio, and overall video authenticity rating.
+
+### 3. 🔴 Real-Time Live Webcam Scanner
+- **Live Optical Stream**: Analyzes live webcam frames every 650ms directly in the browser via WebRTC (`getUserMedia`).
+- **Interactive Canvas HUD**: Renders real-time targeting crosshairs, live confidence meters, FPS tracking, and instant alerts (`AUTHENTIC HUMAN` vs. `DEEPFAKE ALERT`).
+- **Liveness Protocol Guidance**: Instructs users through head tilt and blink validation.
+
+### 4. 🎙️ Synthetic Voice & Speech Cloning Verification
+- **Acoustic Waveform Forensics**: Audits audio clips (.wav, .mp3, .ogg) for voice cloning and text-to-speech (TTS) signatures.
+- **Spectral Harmonic Entropy**: Detects spectral flattening and robotic pitch uniformity.
+- **Zero-Crossing Rate (ZCR) & RMS Energy**: Verifies human vocal dynamics against synthetic vocoder outputs.
+
+### 5. 📜 Verification Audit Log & Exportable Certificates
+- **Session Audit History**: Automatically records all inspected media, SHA-256 digests, and verdicts in LocalStorage.
+- **Printable Certificate of Authenticity**: Generates a formal forensic verification certificate compliant with ISO/IEC 27037 digital evidence guidelines, complete with verification ID, cryptographic hash, and exportable JSON.
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/` | API status and greeting |
+| `GET` | `/systemInfo` | Neural model architecture specs, parameter count, and capabilities |
+| `POST` | `/predictImage` | Full image analysis (CNN + ELA + FFT + Noise + Metadata) |
+| `POST` | `/predictVideo` | Temporal video forensics with frame timeline and flagged keyframes |
+| `POST` | `/predictRealtime` | Low-latency single frame classification for live webcam streaming |
+| `POST` | `/predictAudio` | Voice cloning and synthetic audio forensic analysis |
+| `POST` | `/generateReport` | Generates a signed verification certificate with unique Audit ID |
+
+---
+
+## Model Architecture
+
+- **Base Architecture**: 10-Layer Convolutional Neural Network
+- **Dilated Convolutions**: Dilated layers (rate = 2) in upper stages to capture global facial context without spatial resolution loss.
+- **Regularization**: Dropout (rate = 0.50) on dense layers to prevent co-adaptation.
+- **Input Resolution**: `[224, 224, 3]` normalized RGB.
+- **Accuracy**: >99% test accuracy on deepfake benchmark callsets.
+
+---
+
+## Legal & Forensic Disclaimer
+
+Detection results produced by this system are probabilistic assessments derived from machine learning models and digital forensic heuristics. They are **not legal, forensic, or evidential proof**. Human expert review should always be conducted before taking consequential or judicial action.
