@@ -85,3 +85,29 @@ The main model is a **10 Layer Deep CNN Architecture**, which is optimized for e
 <img src="client/public/df3.png"/>
 <img src="client/public/df5.png"/>
 <img src="client/public/df4.png"/>
+
+## Attribution and disclaimer
+
+Original project created and credited to [harshpx](https://github.com/harshpx), repository: https://github.com/harshpx/deepfake-detection.
+
+Detection results are probabilistic predictions and are **not legal, forensic, or evidential proof**. Human expert review is required before taking consequential action.
+
+## Image analysis API
+
+`POST /predictImage` accepts JPEG, PNG, or WebP image uploads up to 10 MB. The endpoint validates the declared MIME type and file magic bytes, processes the file with a temporary name, and deletes the temporary file after processing.
+
+The response includes:
+
+- `result`: `0` real, `1` fake, or `-1` no face detected
+- `confidence`: model confidence between `0` and `1`
+- `confidence_percent`: model confidence percentage
+- `label`: `Real`, `Fake`, or `No face detected`
+- `disclaimer`: legal and evidentiary use disclaimer
+
+Run the API tests with:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+For Python 3.11 on Windows, use `tensorflow-cpu==2.19.0` and `tensorflow-io-gcs-filesystem==0.31.0`; the original `0.37.1` I/O pin is not available for this runtime.

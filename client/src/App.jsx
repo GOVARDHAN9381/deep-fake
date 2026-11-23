@@ -65,14 +65,16 @@ const App = () => {
 
 			const res = await fetch(`${BASEURL}/predictVideo`,postHeader)
 			const data = await res.json()
-			console.log(data);
+			if (!res.ok) {
+				throw new Error(data.detail || "Unable to analyze video")
+			}
 			setResult(data)
 			setLoading(false)
 
-			toast.success("Predicted Successfully")
+			toast.success("Video analyzed successfully")
 
 		} catch (error) {
-			toast.error("API Error!")
+			toast.error(error.message || "API Error!")
 			setLoading(false)
 			console.log(error)
 		}
@@ -93,13 +95,16 @@ const App = () => {
 			const res = await fetch(`${BASEURL}/predictImage`,postHeader)
 			const data = await res.json()
 
+			if (!res.ok) {
+				throw new Error(data.detail || "Unable to analyze image")
+			}
+
 			setResult(data)
 			setLoading(false)
-
-			toast.success("Predicted Successfully")
+			toast.success("Image analyzed successfully")
 
 		} catch (error) {
-			toast.error("API Error!")
+			toast.error(error.message || "API Error!")
 			setLoading(false)
 			console.log(error)
 		}
@@ -161,10 +166,25 @@ const App = () => {
 					</div>
 				)}
 
-				{result && (
-					result.result==0 ? <div className="text-2xl flex items-center gap-2">Prediction Result: <span className="font-bold text-green-500">Real</span></div> : 
-					(result.result==1 ? <div className="text-2xl flex items-center gap-2">Prediction Result: <span className="font-bold text-red-500">Fake</span></div> : 
-					<div className="text-2xl flex items-center gap-2">Prediction Result: <span className="font-bold text-neutral-700">No face Detected</span></div>)
+				{result && imageUrl && (
+					<div className="w-11/12 sm:w-5/6 md:w-4/5 lg:w-3/5 xl:w-1/2 rounded-2xl border border-slate-300 bg-white p-5 text-center shadow-sm">
+						<div className="text-xl sm:text-2xl flex flex-wrap items-center justify-center gap-2">
+							Prediction Result:
+							<span className={`font-bold ${result.result === 1 ? "text-red-600" : result.result === 0 ? "text-green-600" : "text-neutral-600"}`}>
+								{result.label}
+							</span>
+							{result.result !== -1 && <span className="text-base text-slate-600">({result.confidence_percent}% confidence)</span>}
+						</div>
+						{result.result !== -1 && (
+							<div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
+								<div
+									className={`h-full ${result.result === 1 ? "bg-red-500" : "bg-green-500"}`}
+									style={{ width: `${result.confidence_percent}%` }}
+								/>
+							</div>
+						)}
+						<p className="mt-4 text-sm text-amber-800">Probabilistic result only; not legal proof.</p>
+					</div>
 				)}
 
 				<div className="flex items-center justify-center gap-2">

@@ -1,4 +1,5 @@
 venv
+.venv
 client/node_modules
 __pycache__
 Dataset
